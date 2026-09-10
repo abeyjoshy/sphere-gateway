@@ -5,7 +5,8 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "seed": "node script/seed.js"
   },
   "author": "Abey Joshy",
   "license": "ISC",

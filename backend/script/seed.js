@@ -5,8 +5,8 @@ import User from "../src/models/user.Model.js";
 
 dotenv.config();
 
-const ADMIN_NAME     = process.env.SEED_ADMIN_NAME     || "SPHERE Admin";
-const ADMIN_EMAIL    = process.env.SEED_ADMIN_EMAIL    || "admin";
+const ADMIN_NAME     = process.env.SEED_ADMIN_NAME     || "admin";
+const ADMIN_EMAIL    = process.env.SEED_ADMIN_EMAIL    || "admin@sphere.com";
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || "Sphere@123";
 
 async function seed() {
