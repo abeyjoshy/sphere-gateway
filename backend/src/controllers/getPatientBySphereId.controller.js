@@ -1,45 +1,27 @@
-import Patient from "../models/patient.Model.js";
+import FhirResource from "../models/fhirResource.Model.js";
+import { operationOutcome } from "../fhir/operationOutcome.js";
 
-export default async function getPatientBySphereId(req, res) {
+const FHIR_JSON = "application/fhir+json";
 
-    const sphere_patient_id = req.params?.sphere_patient_id || null;
+export default async function getPatientById(req, res) {
+  const { id } = req.params;
 
-    if (!sphere_patient_id) {
+  try {
+    const doc = await FhirResource.findOne({
+      resourceType: "Patient", fhirId: id, deleted: false,
+    });
 
-        return res.status(400).json({
-            status: "BAD_REQUEST",
-            message: "sphere_patient_id is required"
-        });
+    if (!doc) {
+      return res.status(404).type(FHIR_JSON).json(
+        operationOutcome("error", "not-found", `No Patient with id '${id}'`)
+      );
     }
 
-    try {
-
-        const patient = await Patient.findOne({
-            sphere_patient_id
-        });
-
-        if (!patient) {
-
-            return res.status(404).json({
-                status: "NOT_FOUND",
-                message: "Patient not found"
-            });
-        }
-
-        return res.status(200).json({
-            status: "SUCCESS",
-            message: "Patient fetched successfully",
-            payLoad: patient
-        });
-
-    } catch (error) {
-
-        console.error(`Error fetching patient: ${error}`);
-
-        return res.status(500).json({
-            status: "ERROR",
-            message: "Failed to fetch patient",
-            error: error.message
-        });
-    }
+    return res.status(200).type(FHIR_JSON).json(doc.resource);
+  } catch (error) {
+    console.error(`Error reading Patient: ${error}`);
+    return res.status(500).type(FHIR_JSON).json(
+      operationOutcome("error", "exception", "Failed to read Patient")
+    );
+  }
 }

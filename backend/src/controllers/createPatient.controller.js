@@ -1,58 +1,46 @@
-import Patient from "../models/patient.Model.js";
-import generateSpherePatientId from "../utils/generateSphereID.js";
+import crypto from "node:crypto";
+import FhirResource from "../models/fhirResource.Model.js";
+import { operationOutcome } from "../fhir/operationOutcome.js";
+
+const FHIR_JSON = "application/fhir+json";
 
 export default async function createPatient(req, res) {
+    const body = req.body;
 
-    const {
-        first_name,
-        last_name,
-        date_of_birth,
-        gender,
-        phone,
-        email
-    } = req.body;
-
-    if (
-        !first_name ||
-        !last_name ||
-        !date_of_birth
-    ) {
-        return res.status(400).json({
-            status: "BAD_REQUEST",
-            message: "first_name, last_name and date_of_birth are required"
-        });
+    if (!body || body.resourceType !== "Patient") {
+        return res.status(400).type(FHIR_JSON).json(
+        operationOutcome("error", "invalid", "Body must be a FHIR Patient resource")
+        );
     }
 
-    try {
+    const fhirId = crypto.randomUUID();          // server owns the id
+    const now = new Date().toISOString();
 
-        const sphere_patient_id = await generateSpherePatientId();
-
-        const newPatient = new Patient({
-            sphere_patient_id,
-            first_name,
-            last_name,
-            date_of_birth,
-            gender,
-            phone,
-            email
-        });
-
-        await newPatient.save();
-
-        return res.status(201).json({
-            status: "SUCCESS",
-            message: "Patient created successfully",
-            payLoad: newPatient
-        });
-
-    } catch (error) {
-
-        console.error(`Error creating patient: ${error}`);
-
-        return res.status(500).json({
-            status: "ERROR",
-            message: "Failed to create patient",
-            error: error.message
-        });
+    const resource = body;
+    resource.id = fhirId;
+    // meta is optional in FHIR, so the client may not have sent it.
+    // make sure the object exists before we write into it.
+    if (!resource.meta) {
+    resource.meta = {};
     }
+    resource.meta.versionId = "1";        // first version of this resource
+    resource.meta.lastUpdated = now;      // when we stored it
+
+
+
+  try {
+    await FhirResource.create({ resourceType: "Patient", fhirId, resource });
+  } catch (error) {
+    console.error(`Error creating Patient: ${error}`);
+    return res.status(500).type(FHIR_JSON).json(
+      operationOutcome("error", "exception", "Failed to store Patient")
+    );
+  }
+
+  return res
+    .status(201)
+    .location(`/fhir/Patient/${fhirId}`)
+    .set("ETag", 'W/"1"')
+    .type(FHIR_JSON)
+    .json(resource);
 }
