@@ -10,3 +10,17 @@ export function searchsetBundle(resources, baseUrl) {
     })),
   };
 }
+
+
+export function transactionResponseBundle(stored) {
+  return {
+    resourceType: "Bundle",
+    type: "transaction-response",
+    entry: stored.map((item) => ({
+      response: {
+        status: "201 Created",
+        location: `${item.resourceType}/${item.fhirId}/_history/1`,
+      },
+    })),
+  };
+}
