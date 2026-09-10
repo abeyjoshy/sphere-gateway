@@ -20,3 +20,14 @@ export function rewriteReferences(resource, idMap) {
   return JSON.parse(json);
 }
 // idMap = { "urn:uuid:1111": "Patient/abc-123" }
+
+export async function findResourceBySource(resourceType, sourceSystem, sourceId) {
+  if (!sourceId) return null;
+  const doc = await FhirResource.findOne({
+    resourceType,
+    sourceSystem,
+    sourceId,
+    deleted: false,
+  });
+  return doc ? doc.resource : null;
+}

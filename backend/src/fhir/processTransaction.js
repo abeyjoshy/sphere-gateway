@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import FhirResource from "../models/fhirResource.Model.js";
-import { findPatientByIdentifier, rewriteReferences } from "./patientResolver.js";
+import { findPatientByIdentifier, rewriteReferences, findResourceBySource } from "./patientResolver.js";
 
 const SUPPORTED = [
 "Patient", "Condition", "AllergyIntolerance",
@@ -29,16 +29,21 @@ export async function processTransaction(bundle, sourceSystem){
       throw err;
     }
 
+    // the source's own key for this resource: its id, or a hash of its content 
+    const sourceId = res.id
+      || crypto.createHash("sha256").update(JSON.stringify(res)).digest("hex");
+
     let realId;
     if (res.resourceType === "Patient") {
       const existing = await findPatientByIdentifier(res.identifier);
       realId = existing ? existing.id : crypto.randomUUID();
     } else {
-      realId = crypto.randomUUID();
+      const existing = await findResourceBySource(res.resourceType, sourceSystem, sourceId);
+      realId = existing ? existing.id : crypto.randomUUID();
     }
 
     idMap[entry.fullUrl] = `${res.resourceType}/${realId}`;
-    stashed.push({ resourceType: res.resourceType, realId, resource: res });
+    stashed.push({ resourceType: res.resourceType, realId, sourceId, resource: res });
   }
 
     const toStore = stashed.map((item) => {
@@ -55,7 +60,7 @@ export async function processTransaction(bundle, sourceSystem){
     resource.meta.lastUpdated = now;
     resource.meta.source = sourceSystem;
 
-    return { resourceType: item.resourceType, fhirId: item.realId, resource };
+    return { resourceType: item.resourceType, fhirId: item.realId, sourceId: item.sourceId, resource };
     });
 
 
@@ -63,7 +68,11 @@ export async function processTransaction(bundle, sourceSystem){
   for (const item of toStore) {
     await FhirResource.findOneAndUpdate(
       { resourceType: item.resourceType, fhirId: item.fhirId },
-      { $set: { resource: item.resource, deleted: false } },
+      { $set: { 
+        resource: item.resource, 
+        sourceSystem,
+        sourceId: item.sourceId,
+        deleted: false } },
       { upsert: true }
     );
   }
