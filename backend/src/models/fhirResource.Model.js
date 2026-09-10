@@ -12,6 +12,6 @@ const fhirResourceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-fhirResourceSchema.index({ resourceType: 1, fhirId: 1, sourceSystem: 1, sourceId: 1 }, { unique: true });
+fhirResourceSchema.index({ resourceType: 1, fhirId: 1, sourceSystem: 1, sourceId: 1  }, { unique: true });
 
 export default mongoose.model("FhirResource", fhirResourceSchema, "fhir_resources");
