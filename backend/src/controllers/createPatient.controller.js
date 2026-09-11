@@ -41,18 +41,11 @@ export default async function createPatient(req, res) {
       .set("ETag", 'W/"1"')
       .type(FHIR_JSON)
       .json(resource);
-      
+
   } catch (error) {
     console.error(`Error creating Patient: ${error}`);
     return res.status(500).type(FHIR_JSON).json(
       operationOutcome("error", "exception", "Failed to store Patient")
     );
   }
-
-  return res
-    .status(201)
-    .location(`/fhir/Patient/${fhirId}`)
-    .set("ETag", 'W/"1"')
-    .type(FHIR_JSON)
-    .json(resource);
 }
