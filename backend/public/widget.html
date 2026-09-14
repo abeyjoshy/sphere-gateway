@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SPHERE Connect</title>
+</head>
+<body>
+  <div id="loginSection">
+    <h3>Connect to SPHERE</h3>
+    <input type="email" id="email" placeholder="SPHERE Email" />
+    <input type="password" id="password" placeholder="SPHERE Password" />
+    <button id="loginBtn">Login</button>
+    <p id="loginError"></p>
+  </div>
+
+  <div id="connectedSection" style="display:none;">
+    <p>Connected to SPHERE</p>
+  </div>
+
+  <script>
+    const cached = localStorage.getItem("sphereToken");
+    if (cached) {
+      showConnected();
+    }
+
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      const res = await fetch("/sphere/api/v1/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        document.getElementById("loginError").textContent = data.message;
+        return;
+      }
+
+      localStorage.setItem("sphereToken", data.payLoad.token);
+      showConnected();
+    });
+
+    function showConnected() {
+    window.parent.postMessage({ type: "sphere-connected" }, "http://localhost:4000");
+    document.getElementById("loginSection").style.display = "none";
+    document.getElementById("connectedSection").style.display = "block";
+    }
+
+    window.addEventListener("message", (event) => {
+    if (event.origin !== "http://localhost:4000") return; // only trust Epic's own origin
+
+    if (event.data?.type === "sphere-logout") {
+        localStorage.removeItem("sphereToken");
+        document.getElementById("connectedSection").style.display = "none";
+        document.getElementById("loginSection").style.display = "block";
+        document.getElementById("email").value = "";
+        document.getElementById("password").value = "";
+    }
+});
+  </script>
+</body>
+</html>

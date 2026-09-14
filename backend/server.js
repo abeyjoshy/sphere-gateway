@@ -12,6 +12,8 @@ dotenv.config();
 const app = express();
 app.use(bodyParser.json({ type: ["application/json", "application/fhir+json"] }));
 app.use(cors());
+app.use(express.static("public"));
+
 
 async function initializeServer() {
     try {
