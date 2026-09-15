@@ -6,6 +6,7 @@ import searchPatients from "../controllers/getAllPatients.controller.js";
 import handleTransaction from "../controllers/fhirTransaction.controller.js";
 import requireRole from "../middlewre/requireRole.js";
 import getPatientEverything from "../controllers/getPatientEverything.controller.js";
+import deleteResource from "../controllers/deleteResource.controller.js";
 
 const router = Router();
 
@@ -15,5 +16,7 @@ router.get("/Patient/:id", authenticateToken, requireRole("doctor","admin"), get
 router.get("/Patient/:id/\\$everything", authenticateToken, requireRole("doctor", "admin"), getPatientEverything);
 
 router.post("/",authenticateToken, requireRole("doctor","admin"), handleTransaction);   // = POST /fhir
+
+router.delete("/:resourceType/:id", authenticateToken, requireRole("patient"), deleteResource);
 
 export default router;

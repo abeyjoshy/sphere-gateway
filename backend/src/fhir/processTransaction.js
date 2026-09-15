@@ -83,9 +83,11 @@ for (const item of toStore) {
         { upsert: true }
       );
     } else {
-      await FhirResource.findOneAndUpdate(
+        await FhirResource.findOneAndUpdate(
         { resourceType: item.resourceType, fhirId: item.fhirId },
-        { $set: { resource: item.resource, deleted: false, sourceSystem, sourceId: item.sourceId } },
+        { $set: { resource: item.resource, sourceSystem, sourceId: item.sourceId },
+          $setOnInsert: { deleted: false },
+        },
         { upsert: true }
       );
     }

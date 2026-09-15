@@ -64,7 +64,6 @@ export async function findResourceBySource(resourceType, sourceSystem, sourceId)
     resourceType,
     sourceSystem,
     sourceId,
-    deleted: false,
   });
   return doc ? doc.resource : null;
 }
