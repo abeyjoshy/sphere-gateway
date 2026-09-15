@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import FhirResource from "../models/fhirResource.Model.js";
-import { findPatientByIdentifier, rewriteReferences, findResourceBySource } from "./patientResolver.js";
+import { findPatientByIdentifier, findPatientByDemographics, mergeIdentifiers, rewriteReferences, findResourceBySource } from "./patientResolver.js";
 
 const SUPPORTED = [
 "Patient", "Condition", "AllergyIntolerance",
@@ -35,9 +35,15 @@ export async function processTransaction(bundle, sourceSystem){
 
     let realId;
     if (res.resourceType === "Patient") {
-      const existing = await findPatientByIdentifier(res.identifier);
-      realId = existing ? existing.id : crypto.randomUUID();
-    } else {
+    let existing = await findPatientByIdentifier(res.identifier);
+    if (!existing) {
+      existing = await findPatientByDemographics(res);
+    }
+    if (existing) {
+       res.identifier = await mergeIdentifiers(existing.id, res.identifier);
+    }
+    realId = existing ? existing.id : crypto.randomUUID();
+  } else {
       const existing = await findResourceBySource(res.resourceType, sourceSystem, sourceId);
       realId = existing ? existing.id : crypto.randomUUID();
     }
@@ -64,19 +70,26 @@ export async function processTransaction(bundle, sourceSystem){
     });
 
 
+for (const item of toStore) {
+    const isPatient = item.resourceType === "Patient";
 
-  for (const item of toStore) {
-    await FhirResource.findOneAndUpdate(
-      { resourceType: item.resourceType, fhirId: item.fhirId },
-      { $set: { 
-        resource: item.resource, 
-        sourceSystem,
-        sourceId: item.sourceId,
-        deleted: false } },
-      { upsert: true }
-    );
+    if (isPatient) {
+      await FhirResource.findOneAndUpdate(
+        { resourceType: "Patient", fhirId: item.fhirId },
+        {
+          $set: { resource: item.resource, deleted: false },
+          $setOnInsert: { sourceSystem, sourceId: item.sourceId }
+        },
+        { upsert: true }
+      );
+    } else {
+      await FhirResource.findOneAndUpdate(
+        { resourceType: item.resourceType, fhirId: item.fhirId },
+        { $set: { resource: item.resource, deleted: false, sourceSystem, sourceId: item.sourceId } },
+        { upsert: true }
+      );
+    }
   }
 
   return toStore;
-
 }
