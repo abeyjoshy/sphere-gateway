@@ -70,7 +70,7 @@ async function handleRegister() {
 
 document.getElementById("logoutBtn").addEventListener("click", () => {
   localStorage.removeItem("patientToken");
-  document.getElementById("portalHeader").style.display = "none";
+  document.getElementById("portalUserInfo").style.display = "none";
   document.getElementById("portalMain").style.display = "none";
   document.getElementById("loginSection").style.display = "flex";
 });
@@ -94,7 +94,7 @@ async function showRecord() {
     return;
   }
 
-  document.getElementById("portalHeader").style.display = "flex";
+  document.getElementById("portalUserInfo").style.display = "flex";
   document.getElementById("portalMain").style.display = "flex";
   renderBundle(data);
 }

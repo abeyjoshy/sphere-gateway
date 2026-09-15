@@ -8,7 +8,13 @@
 
 html, body { height: 100%; margin: 0; }
 
+/* Overrides widget.css's flex/align-items/padding on body — those were
+   written for the narrow widget iframe; the full-page portal needs its
+   own header to span edge-to-edge instead of shrinking to a centered
+   block. */
 body {
+  display: block;
+  padding: 0;
   font-family: "Segoe UI", Roboto, Arial, sans-serif;
   color: #1f2937;
   background: #f4f6f8;
