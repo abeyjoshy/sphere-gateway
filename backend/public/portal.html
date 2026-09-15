@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SPHERE Patient Portal</title>
+  <link rel="stylesheet" href="css/widget.css" />
+  <link rel="stylesheet" href="css/portal.css" />
+</head>
+<body>
+  <header id="portalHeader" style="display:none;">
+    <h1>SPHERE Patient Portal</h1>
+    <div class="doctor-info">
+      <span id="welcomeText"></span>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </header>
+
+  <div id="loginSection" class="auth-screen">
+    <div class="login-card">
+      <h3>Patient Login</h3>
+      <input type="email" id="loginEmail" placeholder="Email" />
+      <input type="password" id="loginPassword" placeholder="Password" />
+      <button id="loginBtn">Login</button>
+      <p id="loginError" class="error-text"></p>
+      <button id="showRegisterBtn" class="link-btn">New here? Register</button>
+    </div>
+  </div>
+
+  <div id="registerSection" class="auth-screen" style="display:none;">
+    <div class="login-card">
+      <h3>Create Your SPHERE Account</h3>
+      <input type="text" id="regName" placeholder="Full name" />
+      <input type="email" id="regEmail" placeholder="Email" />
+      <input type="password" id="regPassword" placeholder="Password" />
+      <input type="date" id="regDob" />
+      <input type="text" id="regPpsn" placeholder="PPSN" />
+      <button id="registerBtn">Register</button>
+      <p id="registerError" class="error-text"></p>
+      <button id="showLoginBtn" class="link-btn">Back to login</button>
+    </div>
+  </div>
+
+  <main id="portalMain" class="portal-columns" style="display:none;">
+    <section class="portal-col-left">
+      <div class="card">
+        <h4 class="section-title">Medical History</h4>
+        <div id="recordView"></div>
+      </div>
+    </section>
+
+    <aside class="portal-col-right">
+      <div class="card">
+        <h4 class="section-title">Personal Details</h4>
+        <div id="personalDetails"></div>
+      </div>
+      <div class="card">
+        <h4 class="section-title">Notifications</h4>
+        <div id="notifications">
+          <p class="empty-note">No new notifications.</p>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <div id="deleteModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+      <button class="modal-close" id="deleteModalClose">&times;</button>
+      <h3>Request Deletion?</h3>
+      <p>This will submit a request to permanently delete this record. This cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="secondary" id="deleteCancelBtn">Cancel</button>
+        <button id="deleteConfirmBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" style="display:none;"></div>
+
+  <script type="module" src="js/portal.js"></script>
+</body>
+</html>

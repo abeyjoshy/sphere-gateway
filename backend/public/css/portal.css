@@ -1,0 +1,180 @@
+/* Portal-only layout: header, auth screens, the two-column home layout,
+   delete-confirmation modal and toast. Deliberately kept separate from
+   widget.css instead of editing it, so nothing here can ever change the
+   look of the doctor-facing widget — the history section below reuses
+   widget.css's own classes (.record-columns, .timeline-entry, etc.)
+   directly rather than redefining them, so the two stay visually identical
+   without duplicating the rules. */
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1f2937;
+  background: #f4f6f8;
+}
+
+header {
+  background: #0f6cbd;
+  color: white;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+
+header .doctor-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+header button {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+header button:hover { background: rgba(255, 255, 255, 0.28); }
+
+.auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+}
+
+.link-btn {
+  background: none;
+  color: #0f6cbd;
+  padding: 0;
+  margin-top: 8px;
+}
+
+.link-btn:hover { background: none; text-decoration: underline; }
+
+.error-text { color: #dc2626; font-size: 13px; min-height: 18px; }
+
+/* 2:1 — history is the dominant view; personal details + notifications sit
+   alongside it as a narrower sidebar, same weighting the widget already
+   uses between its own timeline and allergy columns. */
+.portal-columns {
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: flex-start;
+}
+
+.portal-col-left { flex: 2; min-width: 0; }
+
+.portal-col-right {
+  flex: 1;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: white;
+  border: 1px solid #e0e4e8;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e4e8;
+  color: #0b4f8f;
+}
+
+.detail-list { list-style: none; padding: 0; margin: 0; font-size: 13px; line-height: 1.8; }
+.detail-list li { border-bottom: 1px dashed #e0e4e8; padding-bottom: 4px; margin-bottom: 4px; }
+.detail-list li:last-child { border-bottom: none; }
+
+.delete-record-btn {
+  display: block;
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-size: 11px;
+  padding: 0;
+  margin-top: 6px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.delete-record-btn:hover { color: #a91b1b; background: none; }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-box {
+  background: white;
+  border-radius: 8px;
+  position: relative;
+  width: 360px;
+  max-width: 90vw;
+  padding: 24px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  background: none;
+  color: #6b7280;
+  font-size: 20px;
+  padding: 0;
+  line-height: 1;
+}
+
+.modal-close:hover { background: none; color: #1f2937; }
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 2000;
+}
+
+.toast.success { background: #16a34a; }
+.toast.error { background: #dc2626; }
+
+@media (max-width: 700px) {
+  .portal-columns { flex-direction: column; }
+}
