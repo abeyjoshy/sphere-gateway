@@ -1,15 +1,9 @@
-// Fetching and rendering a patient's unified FHIR record, as a chronological
-// timeline — Conditions, AllergyIntolerances and Observations sorted newest
-// first, with any medication linked to a Condition (via reasonReference)
-// nested inside that Condition's own entry, not listed separately.
+// Fetching and rendering a patient's unified FHIR record: a personal-details
+// banner, a chronological timeline (Conditions/Observations, with linked
+// medications nested inside), and Allergies as a separate side column —
+// deliberately not folded into the timeline, since knowing what a patient is
+// allergic to needs to be scannable at a glance, not buried among dates.
 const INTERCONNECT_BASE_URL = "http://localhost:4001/sphere/interconnect";
-
-const TYPE_ICONS = {
-  Condition: "🩺",
-  AllergyIntolerance: "⚠️",
-  MedicationStatement: "💊",
-  Observation: "🧪",
-};
 
 export function initRecordView() {
   const cached = localStorage.getItem("sphereToken");
@@ -44,27 +38,24 @@ function renderBundle(bundle) {
   container.innerHTML = "";
 
   const resources = bundle.entry?.map((e) => e.resource) || [];
-
   const patient = resources.find((r) => r.resourceType === "Patient");
-  if (patient) {
-    const name = patient.name?.[0];
-    container.innerHTML += `
-      <div class="patient-banner">
-        <h3>${name?.given?.[0] || ""} ${name?.family || ""}</h3>
-        <p>DOB: ${patient.birthDate || ""}</p>
-      </div>
-    `;
-  }
 
+  container.innerHTML += renderPatientBanner(patient);
+
+  const allergies = resources.filter((r) => r.resourceType === "AllergyIntolerance");
   const medications = resources.filter((r) => r.resourceType === "MedicationStatement");
   const generalMeds = medications.filter((m) => !m.reasonReference);
 
   const timelineEntries = resources.filter(
-    (r) => r.resourceType !== "Patient" && r.resourceType !== "MedicationStatement"
+    (r) => !["Patient", "AllergyIntolerance", "MedicationStatement"].includes(r.resourceType)
   );
   timelineEntries.sort((a, b) => getEntryDate(b).localeCompare(getEntryDate(a))); // newest first
 
-  const timeline = document.createElement("div");
+  const columns = document.createElement("div");
+  columns.className = "record-columns";
+
+  const timelineCol = document.createElement("div");
+  timelineCol.className = "record-col-timeline";
 
   timelineEntries.forEach((resource) => {
     const linkedMeds = resource.resourceType === "Condition"
@@ -74,25 +65,78 @@ function renderBundle(bundle) {
     const entry = document.createElement("div");
     entry.className = "timeline-entry";
     entry.innerHTML = `
-      <div class="timeline-icon">${TYPE_ICONS[resource.resourceType] || "📄"}</div>
+      <div class="timeline-date">${getEntryDate(resource) || "—"}</div>
       <div class="timeline-content">
-        ${describeResource(resource)}
+        ${describeResource(resource, false)}
         ${linkedMeds.length
-          ? `<div class="nested-meds">${linkedMeds.map((m) => `<div class="med-entry">💊 ${describeResource(m)}</div>`).join("")}</div>`
+          ? `<div class="nested-meds">${linkedMeds.map((m) => `
+              <div class="med-entry">
+                <span class="med-entry-icon">💊</span>
+                <div class="med-entry-body">${describeResource(m)}</div>
+              </div>
+            `).join("")}</div>`
           : ""}
       </div>
     `;
-    timeline.appendChild(entry);
+    timelineCol.appendChild(entry);
   });
 
-  container.appendChild(timeline);
-
   if (generalMeds.length) {
-    container.innerHTML += `<h4>💊 Other Medications</h4>`;
+    timelineCol.innerHTML += `<h4>💊 Other Medications</h4>`;
     generalMeds.forEach((m) => {
-      container.innerHTML += `<div class="record-entry">${describeResource(m)}</div>`;
+      timelineCol.innerHTML += `<div class="record-entry">${describeResource(m)}</div>`;
     });
   }
+
+  const allergyCol = document.createElement("div");
+  allergyCol.className = "record-col-allergies";
+  allergyCol.innerHTML = `<h4>⚠️ Allergies</h4>`;
+  if (allergies.length === 0) {
+    allergyCol.innerHTML += `<p class="empty-note">No known allergies.</p>`;
+  } else {
+    allergies.forEach((a) => {
+      allergyCol.innerHTML += `<div class="record-entry">${describeResource(a)}</div>`;
+    });
+  }
+
+  columns.appendChild(timelineCol);
+  columns.appendChild(allergyCol);
+  container.appendChild(columns);
+}
+
+// The top banner: name/DOB on the left, other demographics on the right.
+// Only shows fields that are actually present in the FHIR data — phone comes
+// from `telecom`, PPSN and MRN from `identifier` (matched by system URI),
+// address generically if ever populated. No blood group: that isn't a FHIR
+// Patient field at all (it would be an Observation), and nothing in the
+// pipeline produces one today, so showing a field with no real data behind
+// it would be misleading rather than just incomplete.
+function renderPatientBanner(patient) {
+  if (!patient) return "";
+
+  const name = patient.name?.[0];
+  const phone = patient.telecom?.find((t) => t.system === "phone")?.value;
+  const ppsn = patient.identifier?.find((id) => id.system === "http://www.hse.ie/ppsn")?.value;
+  const mrn = patient.identifier?.find((id) => id.system === "http://epic-hospital-demo.local/mrn")?.value;
+  const address = patient.address?.[0];
+  const addressText = address
+    ? [address.line?.[0], address.city, address.country].filter(Boolean).join(", ")
+    : "";
+
+  return `
+    <div class="patient-banner">
+      <div class="patient-banner-main">
+        <h3>${name?.given?.[0] || ""} ${name?.family || ""}</h3>
+        <p>DOB: ${patient.birthDate || ""}${patient.gender ? ` &middot; ${patient.gender}` : ""}</p>
+      </div>
+      <div class="patient-banner-details">
+        ${mrn ? `<div>MRN: ${mrn}</div>` : ""}
+        ${ppsn ? `<div>PPSN: ${ppsn}</div>` : ""}
+        ${phone ? `<div>Phone: ${phone}</div>` : ""}
+        ${addressText ? `<div>${addressText}</div>` : ""}
+      </div>
+    </div>
+  `;
 }
 
 function findLinkedMedications(condition, medications) {
@@ -109,7 +153,11 @@ function getEntryDate(resource) {
 // medicationCodeableConcept.text for medications, valueQuantity/valueString
 // for Observations) so a resource type nobody's written specific handling for
 // yet still renders something, instead of vanishing silently.
-function describeResource(r) {
+// `showDate` defaults to true; timeline entries pass false since their date
+// already sits on the timeline marker itself — showing it twice would just
+// be redundant there, but allergies/nested/general medications (which have
+// no separate marker) still need it inline.
+function describeResource(r, showDate = true) {
   const label = r.code?.text || r.medicationCodeableConcept?.text || "";
   const value = r.valueQuantity
     ? `${r.valueQuantity.value} ${r.valueQuantity.unit || ""}`
@@ -118,5 +166,14 @@ function describeResource(r) {
   const note = r.note?.[0]?.text || "";
   const source = r.meta?.source || "";
 
-  return `<strong>${label}</strong> ${value} <span class="muted">(${date}) — from ${source}</span>${note ? `<br><em>${note}</em>` : ""}`;
+  return `
+    <div class="record-entry-row">
+      <div class="record-entry-main">
+        <strong>${label}</strong> ${value}
+        ${showDate && date ? `<span class="record-entry-date">${date}</span>` : ""}
+      </div>
+      ${source ? `<span class="source-tag">${source}</span>` : ""}
+    </div>
+    ${note ? `<em>${note}</em>` : ""}
+  `;
 }

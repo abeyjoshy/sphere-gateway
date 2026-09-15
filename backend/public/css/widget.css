@@ -1,16 +1,38 @@
+html, body { height: 100%; }
+
 body {
   font-family: "Segoe UI", Roboto, Arial, sans-serif;
   color: #1f2937;
   margin: 0;
   padding: 20px;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-sizing: border-box;
 }
 
-#loginSection, #connectedSection, #recordView {
+/* Login/connected stay a comfortable form width; the record view gets much
+   more room since it now holds a two-column timeline+allergies layout plus
+   a demographics panel — a 480px cap would cramp all of that. */
+#loginSection, #connectedSection {
   width: 100%;
   max-width: 480px;
+}
+
+#recordView {
+  width: 100%;
+  max-width: 900px;
+}
+
+/* Only the login screen centers vertically, not the whole page — a long
+   record view needs to flow from the top and scroll, not be centered as a
+   block (which would clip its top/bottom instead of scrolling naturally). */
+#loginSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 #recordView { text-align: left; }
@@ -44,16 +66,38 @@ button:hover { background: #0b4f8f; }
 #loginError { color: #dc2626; font-size: 13px; min-height: 18px; }
 
 .patient-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
   background: #0f6cbd;
   color: white;
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 12px;
-  text-align: center;
 }
 
-.patient-banner h3 { margin: 0 0 4px 0; font-size: 18px; }
-.patient-banner p { margin: 0; font-size: 13px; opacity: 0.9; }
+.patient-banner-main h3 { margin: 0 0 4px 0; font-size: 18px; }
+.patient-banner-main p { margin: 0; font-size: 13px; opacity: 0.9; }
+
+.patient-banner-details {
+  text-align: right;
+  font-size: 12px;
+  line-height: 1.6;
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+
+.record-columns {
+  display: flex;
+  gap: 16px;
+}
+
+/* 2:1 — the timeline is the dominant view; allergies sit alongside it as a
+   narrower, always-visible reference column (not folded into the timeline,
+   so they're scannable without hunting through dated entries). */
+.record-col-timeline { flex: 2; min-width: 0; }
+.record-col-allergies { flex: 1; min-width: 220px; }
 
 #recordView h4 {
   margin: 18px 0 6px 0;
@@ -78,7 +122,32 @@ button:hover { background: #0b4f8f; }
 }
 
 .record-entry .muted { color: #6b7280; font-size: 12px; }
-.record-entry em { color: #6b7280; }
+
+.record-entry-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.record-entry-date {
+  font-weight: 600;
+  color: #374151;
+  margin-left: 6px;
+}
+
+.source-tag {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0b4f8f;
+  background: #e0ecfa;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.record-entry em { color: #6b7280; display: block; margin-top: 4px; }
 
 .timeline-entry {
   display: flex;
@@ -90,8 +159,8 @@ button:hover { background: #0b4f8f; }
 .timeline-entry::before {
   content: "";
   position: absolute;
-  left: 15px;
-  top: 32px;
+  left: 6px;
+  top: 28px;
   bottom: -14px;
   width: 2px;
   background: #e0e4e8;
@@ -99,17 +168,18 @@ button:hover { background: #0b4f8f; }
 
 .timeline-entry:last-child::before { display: none; }
 
-.timeline-icon {
+.timeline-date {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #0f6cbd;
+  width: 76px;
+  height: fit-content;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
   color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
+  background: #0f6cbd;
+  border-radius: 10px;
+  padding: 4px 6px;
+  position: relative;
   z-index: 1;
 }
 
@@ -127,7 +197,16 @@ button:hover { background: #0b4f8f; }
   border-top: 1px dashed #cfd8e3;
 }
 
-.med-entry { font-size: 12px; color: #374151; margin-top: 4px; }
+.med-entry {
+  display: flex;
+  gap: 6px;
+  font-size: 12px;
+  color: #374151;
+  margin-top: 4px;
+}
+
+.med-entry-icon { flex-shrink: 0; }
+.med-entry-body { flex: 1; min-width: 0; }
 
 #connectedSection {
   background: #16a34a;
