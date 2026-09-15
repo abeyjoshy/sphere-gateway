@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>SPHERE Connect</title>
+  <link rel="stylesheet" href="css/widget.css" />
 </head>
 <body>
   <div id="loginSection">
@@ -18,108 +19,6 @@
 
   <div id="recordView"></div>
 
-  <script>
-    const cached = localStorage.getItem("sphereToken");
-    if (cached) {
-      showConnected();
-    }
-
-    document.getElementById("loginBtn").addEventListener("click", async () => {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-
-      const res = await fetch("/sphere/api/v1/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        document.getElementById("loginError").textContent = data.message;
-        return;
-      }
-
-      localStorage.setItem("sphereToken", data.payLoad.token);
-      showConnected();
-    });
-
-    function showConnected() {
-    document.getElementById("loginSection").style.display = "none";
-    document.getElementById("connectedSection").style.display = "block";
-    }
-
-    window.addEventListener("message", (event) => {
-    if (event.origin !== "http://localhost:4000") return; // only trust Epic's own origin
-
-    if (event.data?.type === "sphere-logout") {
-        localStorage.removeItem("sphereToken");
-        document.getElementById("connectedSection").style.display = "none";
-        document.getElementById("loginSection").style.display = "block";
-        document.getElementById("email").value = "";
-        document.getElementById("password").value = "";
-    }
-});
-
-
-
-const params = new URLSearchParams(window.location.search);
-const mrn = params.get("mrn");
-
-if (cached && mrn) {
-  loadRecord(mrn);
-}
-
-async function loadRecord(mrn) {
-  const token = localStorage.getItem("sphereToken");
-
-  const res = await fetch(`http://localhost:4001/sphere/interconnect/extract/${mrn}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  const bundle = await res.json();
-  renderBundle(bundle);
-}
-
-function renderBundle(bundle) {
-  const container = document.getElementById("recordView");
-  container.innerHTML = "";
-
-  const patientEntry = bundle.entry?.find((e) => e.resource.resourceType === "Patient");
-  if (patientEntry) {
-    const p = patientEntry.resource;
-    const name = p.name?.[0];
-    container.innerHTML += `<h3>${name?.given?.[0] || ""} ${name?.family || ""}</h3><p>DOB: ${p.birthDate || ""}</p>`;
-  }
-
-  const grouped = {};
-  bundle.entry?.forEach((e) => {
-    const type = e.resource.resourceType;
-    if (type === "Patient") return;
-    if (!grouped[type]) grouped[type] = [];
-    grouped[type].push(e.resource);
-  });
-
-  Object.keys(grouped).forEach((type) => {
-    container.innerHTML += `<h4>${type}</h4>`;
-    grouped[type].forEach((r) => {
-      container.innerHTML += `<div class="record-entry">${describeResource(r)}</div>`;
-    });
-  });
-}
-
-function describeResource(r) {
-  const label = r.code?.text || r.medicationCodeableConcept?.text || "";
-  const value = r.valueQuantity
-    ? `${r.valueQuantity.value} ${r.valueQuantity.unit || ""}`
-    : (r.valueString || "");
-  const date = r.onsetDateTime || r.effectiveDateTime || r.recordedDate || "";
-  const note = r.note?.[0]?.text || "";
-  const source = r.meta?.source || "";
-
-  return `<strong>${label}</strong> ${value} <span class="muted">(${date}) — from ${source}</span>${note ? `<br><em>${note}</em>` : ""}`;
-}
-  </script>
+  <script type="module" src="js/widget.js"></script>
 </body>
 </html>
