@@ -1,6 +1,6 @@
 import User from "../models/user.Model.js";
 
-const ALLOWED_ROLES = ["admin", "doctor", "patient"];
+const ALLOWED_ROLES = ["admin", "doctor"];
 
 export default async function createUser(req, res) {
   const name = req.body?.name || null;

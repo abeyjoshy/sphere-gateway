@@ -39,6 +39,11 @@ const userSchema = new mongoose.Schema({
         trim: true
     },
 
+    spherePatientId: { 
+        type: String,
+        trim: true 
+    },
+
     is_active: {
         type: Boolean,
         default: true
