@@ -97,6 +97,7 @@ async function showRecord() {
   document.getElementById("portalUserInfo").style.display = "flex";
   document.getElementById("portalMain").style.display = "flex";
   renderBundle(data);
+  loadAccessRequests();
 }
 
 function renderBundle(bundle) {
@@ -286,6 +287,89 @@ document.getElementById("deleteConfirmBtn").addEventListener("click", async () =
   }
 
   showToast("Your request has been submitted and this record will be deleted soon.", "success");
+});
+
+// Notifications panel: pending/approved/rejected access requests for this
+// patient. Backend contract (guided separately): GET /consent/requests
+// returns { requests: [...] }, each with doctor_id populated to
+// { name, email } rather than a bare ObjectId, so the UI can show who's
+// asking without a second lookup.
+async function loadAccessRequests() {
+  const token = localStorage.getItem("patientToken");
+
+  const res = await fetch("/sphere/api/v1/consent/requests", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) return;
+
+  const data = await res.json();
+  renderNotifications(data.requests);
+}
+
+function renderNotifications(requests) {
+  const container = document.getElementById("notifications");
+
+  if (!requests || requests.length === 0) {
+    container.innerHTML = `<p class="empty-note">No new notifications.</p>`;
+    return;
+  }
+
+  container.innerHTML = requests.map((r) => {
+    const doctorName = r.doctor_id?.name || "A doctor";
+    const statusLabel = {
+      pending: "requested access to your record",
+      approved: "access approved",
+      rejected: "access denied",
+      revoked: "access revoked",
+    }[r.status];
+
+    return `
+      <div class="notification-item notification-${r.status}">
+        <div class="notification-text">
+          <strong>${doctorName}</strong>
+          <span class="notification-status">${statusLabel}</span>
+          ${r.reason ? `<p class="notification-reason">${r.reason}</p>` : ""}
+        </div>
+        ${r.status === "pending" ? `
+          <div class="notification-actions">
+            <button class="approve-btn" data-id="${r._id}">Approve</button>
+            <button class="secondary deny-btn" data-id="${r._id}">Deny</button>
+          </div>
+        ` : ""}
+        ${r.status === "approved" ? `
+          <div class="notification-actions">
+            <button class="secondary revoke-btn" data-id="${r._id}">Revoke</button>
+          </div>
+        ` : ""}
+      </div>
+    `;
+  }).join("");
+}
+
+document.getElementById("notifications").addEventListener("click", async (e) => {
+  const btn = e.target.closest(".approve-btn, .deny-btn, .revoke-btn");
+  if (!btn) return;
+
+  const id = btn.dataset.id;
+  const action = btn.classList.contains("approve-btn") ? "approve"
+    : btn.classList.contains("deny-btn") ? "deny"
+    : "revoke";
+  const token = localStorage.getItem("patientToken");
+
+  const res = await fetch(`/sphere/api/v1/consent/requests/${id}/${action}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) {
+    showToast("Could not update this request.", "error");
+    return;
+  }
+
+  const messages = { approve: "Access approved.", deny: "Access denied.", revoke: "Access revoked." };
+  showToast(messages[action], "success");
+  loadAccessRequests();
 });
 
 function showToast(message, type) {
