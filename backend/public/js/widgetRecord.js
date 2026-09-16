@@ -15,22 +15,86 @@ export function initRecordView() {
   }
 }
 
-async function loadRecord(mrn) {
+async function loadRecord(mrn, { emergency, reason } = {}) {
   const token = localStorage.getItem("sphereToken");
 
-  const res = await fetch(`${INTERCONNECT_BASE_URL}/extract/${mrn}`, {
+  const query = emergency ? `?emergency=true&reason=${encodeURIComponent(reason)}` : "";
+
+  const res = await fetch(`${INTERCONNECT_BASE_URL}/extract/${mrn}${query}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
   const data = await res.json();
 
   if (!res.ok) {
-    document.getElementById("recordView").innerHTML =
-      `<p class="empty-note">${data.message || "No SPHERE record found for this patient yet."}</p>`;
+    if (res.status === 403) {
+      renderAccessDenied(mrn, data.message);
+    } else {
+      document.getElementById("recordView").innerHTML =
+        `<p class="empty-note">${data.message || "No SPHERE record found for this patient yet."}</p>`;
+    }
     return;
   }
 
   renderBundle(data);
+}
+
+// Shown when SPHERE denies routine access (403) instead of the plain
+// "no record found" message — offers the same emergency-override escape
+// hatch evaluateAccess() already supports server-side, requiring a typed
+// reason so a bypass always leaves a justification behind, not just a click.
+function renderAccessDenied(mrn, message) {
+  document.getElementById("recordView").innerHTML = `
+    <p class="empty-note">${message || "Access to this patient's SPHERE record has not been granted yet."}</p>
+    <div class="access-request-block">
+      <button id="requestAccessBtn">Request Access</button>
+      <p id="requestAccessStatus" class="empty-note" style="display:none;"></p>
+    </div>
+    <div class="emergency-override">
+      <textarea id="emergencyReason" placeholder="Reason for emergency access (required)"></textarea>
+      <button id="emergencyOverrideBtn" class="danger">Emergency Override</button>
+    </div>
+  `;
+
+  document.getElementById("requestAccessBtn").addEventListener("click", () => sendAccessRequest(mrn));
+
+  document.getElementById("emergencyOverrideBtn").addEventListener("click", () => {
+    const reason = document.getElementById("emergencyReason").value.trim();
+    if (!reason) {
+      alert("A reason is required for emergency access.");
+      return;
+    }
+    loadRecord(mrn, { emergency: true, reason });
+  });
+}
+
+// Explicit, doctor-initiated request only — evaluateAccess() no longer
+// auto-creates one just from a denied read, so nothing gets sent to the
+// patient until this button is actually clicked.
+async function sendAccessRequest(mrn) {
+  const token = localStorage.getItem("sphereToken");
+  const btn = document.getElementById("requestAccessBtn");
+  const status = document.getElementById("requestAccessStatus");
+
+  btn.disabled = true;
+
+  const res = await fetch(`${INTERCONNECT_BASE_URL}/request-access/${mrn}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    btn.disabled = false;
+    status.textContent = data.message || "Could not send the request.";
+    status.style.display = "block";
+    return;
+  }
+
+  btn.textContent = "Request Sent";
+  status.textContent = "Waiting for the patient to approve your access request.";
+  status.style.display = "block";
 }
 
 function renderBundle(bundle) {

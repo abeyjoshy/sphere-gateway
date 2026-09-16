@@ -19,18 +19,6 @@ export async function evaluateAccess(patientId, requestingUser, { emergency, rea
     return { allowed: true, basis: "emergency_override" };
   }
 
-   await AccessRequest.findOneAndUpdate(
-    { patient_id: patientId, doctor_id: requestingUser.id, status: "pending" },
-    {
-      $setOnInsert: {
-        patient_id: patientId,
-        doctor_id: requestingUser.id,
-        reason: reason || "Routine access request",
-        status: "pending",
-      },
-    },
-    { upsert: true }
-  );
-
   return { allowed: false, basis: "denied" };
 }
+  

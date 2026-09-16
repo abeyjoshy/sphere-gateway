@@ -12,7 +12,7 @@ import getAccessRequests from "../controllers/getAccessRequests.controller.js";
 import approveAccessRequest from "../controllers/approveAccessRequest.controller.js";
 import denyAccessRequest from "../controllers/denyAccessRequest.controller.js";
 import revokeAccessRequest from "../controllers/revokeAccessRequest.controller.js";
-
+import requestAccess from "../controllers/requestAccess.controller.js";
 
 const router = Router();
 
@@ -28,5 +28,6 @@ router.get("/consent/requests", authenticateToken, requireRole("patient"), getAc
 router.post("/consent/requests/:id/approve", authenticateToken, requireRole("patient"), approveAccessRequest);
 router.post("/consent/requests/:id/deny", authenticateToken, requireRole("patient"), denyAccessRequest);
 router.post("/consent/requests/:id/revoke", authenticateToken, requireRole("patient"), revokeAccessRequest);
+router.post("/patients/:id/access-requests", authenticateToken, requireRole("doctor","admin"), requestAccess);
 
 export default router;

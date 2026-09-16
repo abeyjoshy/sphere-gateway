@@ -223,3 +223,24 @@ button:hover { background: #0b4f8f; }
 #connectedSection p { margin: 0; }
 
 .empty-note { color: #6b7280; font-size: 13px; font-style: italic; }
+
+.access-request-block { margin-top: 12px; }
+.access-request-block button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.emergency-override { margin-top: 12px; }
+
+.emergency-override textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 60px;
+  padding: 9px 11px;
+  margin: 6px 0;
+  border: 1px solid #e0e4e8;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+button.danger { background: #dc2626; }
+button.danger:hover { background: #b91c1c; }

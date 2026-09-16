@@ -13,11 +13,11 @@ export default async function requireConsent(req, res, next) {
   });
 
    if (!result.allowed) {
-    return res.status(403).type(FHIR_JSON).json(
+     return res.status(403).type(FHIR_JSON).json(
       operationOutcome(
         "error",
         "forbidden",
-        "Access to this patient's record has not been granted. A request has been sent to the patient."
+        "Access to this patient's record has not been granted. Send an access request from the widget."
       )
     );
   }
