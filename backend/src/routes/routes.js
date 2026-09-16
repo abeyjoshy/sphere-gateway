@@ -13,6 +13,7 @@ import approveAccessRequest from "../controllers/approveAccessRequest.controller
 import denyAccessRequest from "../controllers/denyAccessRequest.controller.js";
 import revokeAccessRequest from "../controllers/revokeAccessRequest.controller.js";
 import requestAccess from "../controllers/requestAccess.controller.js";
+import getAuditLog from "../controllers/getAuditLog.controller.js";
 
 const router = Router();
 
@@ -29,5 +30,7 @@ router.post("/consent/requests/:id/approve", authenticateToken, requireRole("pat
 router.post("/consent/requests/:id/deny", authenticateToken, requireRole("patient"), denyAccessRequest);
 router.post("/consent/requests/:id/revoke", authenticateToken, requireRole("patient"), revokeAccessRequest);
 router.post("/patients/:id/access-requests", authenticateToken, requireRole("doctor","admin"), requestAccess);
+router.get("/audit-log", authenticateToken, requireRole("patient"), getAuditLog);
+
 
 export default router;

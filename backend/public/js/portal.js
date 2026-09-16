@@ -10,6 +10,23 @@ document.getElementById("showLoginBtn").addEventListener("click", () => {
   document.getElementById("loginSection").style.display = "flex";
 });
 
+document.getElementById("accountMenuBtn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const dropdown = document.getElementById("accountDropdown");
+  dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+});
+document.addEventListener("click", () => {
+  document.getElementById("accountDropdown").style.display = "none";
+});
+
+document.getElementById("viewPersonalDetailsBtn").addEventListener("click", () => {
+  document.getElementById("accountDropdown").style.display = "none";
+  document.getElementById("personalDetailsModal").style.display = "flex";
+});
+document.getElementById("personalDetailsModalClose").addEventListener("click", () => {
+  document.getElementById("personalDetailsModal").style.display = "none";
+});
+
 document.getElementById("loginBtn").addEventListener("click", handleLogin);
 document.getElementById("loginPassword").addEventListener("keydown", (e) => {
   if (e.key === "Enter") handleLogin();
@@ -98,6 +115,7 @@ async function showRecord() {
   document.getElementById("portalMain").style.display = "flex";
   renderBundle(data);
   loadAccessRequests();
+  loadAuditLog();
 }
 
 function renderBundle(bundle) {
@@ -294,6 +312,20 @@ document.getElementById("deleteConfirmBtn").addEventListener("click", async () =
 // returns { requests: [...] }, each with doctor_id populated to
 // { name, email } rather than a bare ObjectId, so the UI can show who's
 // asking without a second lookup.
+//
+// Split into a compact homepage summary (no actions, just enough to notice
+// something needs attention) and a full modal view (everything, plus the
+// actual Approve/Deny/Revoke buttons) — kept in one cached array so both
+// render from the same fetch instead of hitting the API twice.
+let cachedRequests = [];
+
+const NOTIFICATION_STATUS_LABEL = {
+  pending: "Access Request",
+  approved: "Access Approved",
+  rejected: "Access Denied",
+  revoked: "Access Revoked",
+};
+
 async function loadAccessRequests() {
   const token = localStorage.getItem("patientToken");
 
@@ -304,14 +336,34 @@ async function loadAccessRequests() {
   if (!res.ok) return;
 
   const data = await res.json();
-  renderNotifications(data.requests);
+  cachedRequests = data.requests || [];
+  renderNotificationsCompact(cachedRequests);
+  renderNotificationsFull(cachedRequests);
 }
 
-function renderNotifications(requests) {
+function renderNotificationsCompact(requests) {
   const container = document.getElementById("notifications");
 
   if (!requests || requests.length === 0) {
     container.innerHTML = `<p class="empty-note">No new notifications.</p>`;
+    return;
+  }
+
+  container.innerHTML = requests.map((r) => {
+    const isPending = r.status === "pending";
+    return `
+      <div class="compact-item ${isPending ? "compact-item-highlight" : "compact-item-minor"}">
+        <span><strong>${r.doctor_id?.name || "A doctor"}</strong> — ${NOTIFICATION_STATUS_LABEL[r.status]}</span>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderNotificationsFull(requests) {
+  const container = document.getElementById("notificationsModalList");
+
+  if (!requests || requests.length === 0) {
+    container.innerHTML = `<p class="empty-note">No notifications.</p>`;
     return;
   }
 
@@ -347,7 +399,14 @@ function renderNotifications(requests) {
   }).join("");
 }
 
-document.getElementById("notifications").addEventListener("click", async (e) => {
+document.getElementById("viewAllNotificationsBtn").addEventListener("click", () => {
+  document.getElementById("notificationsModal").style.display = "flex";
+});
+document.getElementById("notificationsModalClose").addEventListener("click", () => {
+  document.getElementById("notificationsModal").style.display = "none";
+});
+
+document.getElementById("notificationsModalList").addEventListener("click", async (e) => {
   const btn = e.target.closest(".approve-btn, .deny-btn, .revoke-btn");
   if (!btn) return;
 
@@ -370,6 +429,105 @@ document.getElementById("notifications").addEventListener("click", async (e) => 
   const messages = { approve: "Access approved.", deny: "Access denied.", revoke: "Access revoked." };
   showToast(messages[action], "success");
   loadAccessRequests();
+});
+
+// Access History: a read-only feed of every AuditEvent tied to this
+// patient — sync pushes, granted/denied reads (including emergency
+// overrides), and access requests. No actions here, unlike Notifications;
+// this is evidence, not something to act on.
+//
+// Same compact-summary / full-modal split as Notifications, but the full
+// view renders as a timeline (reusing widget.css's .timeline-entry classes
+// — already loaded on this page for Medical History) rather than a plain
+// list, and always shows who (name + email) and which system they came
+// through, not just what happened.
+let cachedAuditEvents = [];
+
+const AUDIT_ACTION_LABEL = {
+  sync: () => "synced data",
+  access: (e) => e.outcome === "success"
+    ? `viewed the record${e.basis === "emergency_override" ? " (emergency override)" : ""}`
+    : "attempted to view the record — denied",
+  request: () => "requested access",
+  approve: () => "access request approved",
+  deny: () => "access request denied",
+  revoke: () => "access revoked",
+};
+
+async function loadAuditLog() {
+  const token = localStorage.getItem("patientToken");
+
+  const res = await fetch("/sphere/api/v1/audit-log", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) return;
+
+  const data = await res.json();
+  cachedAuditEvents = data.events || [];
+  renderAuditLogCompact(cachedAuditEvents);
+  renderAuditLogFull(cachedAuditEvents);
+}
+
+function renderAuditLogCompact(events) {
+  const container = document.getElementById("auditLog");
+
+  if (!events || events.length === 0) {
+    container.innerHTML = `<p class="empty-note">No access history yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = events.slice(0, 5).map((e) => {
+    const who = e.actor_name || e.actor_email || "Unknown";
+    const describe = AUDIT_ACTION_LABEL[e.action]?.(e) || e.action;
+    const time = new Date(e.occurred_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return `
+      <div class="compact-item">
+        <span><strong>${who}</strong> ${describe}</span>
+        <span class="compact-time">${time}</span>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderAuditLogFull(events) {
+  const container = document.getElementById("auditLogModalList");
+
+  if (!events || events.length === 0) {
+    container.innerHTML = `<p class="empty-note">No access history yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = events.map((e) => {
+    const date = new Date(e.occurred_at);
+    const dateLabel = date.toLocaleDateString();
+    const timeLabel = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const who = e.actor_name || e.actor_email || "Unknown";
+    const describe = AUDIT_ACTION_LABEL[e.action]?.(e) || e.action;
+    const isEmergency = e.basis === "emergency_override";
+    const isDenied = e.outcome === "denied";
+
+    return `
+      <div class="timeline-entry">
+        <div class="timeline-date">${dateLabel}<br>${timeLabel}</div>
+        <div class="timeline-content ${isDenied ? "audit-denied" : ""} ${isEmergency ? "audit-emergency" : ""}">
+          <strong>${who}</strong> ${describe}
+          <div class="audit-meta">
+            ${e.actor_email ? `<span>${e.actor_email}</span>` : ""}
+            ${e.source_system ? `<span>via ${e.source_system}</span>` : ""}
+          </div>
+          ${e.reason ? `<p class="audit-reason">"${e.reason}"</p>` : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+document.getElementById("viewAllAuditBtn").addEventListener("click", () => {
+  document.getElementById("auditLogModal").style.display = "flex";
+});
+document.getElementById("auditLogModalClose").addEventListener("click", () => {
+  document.getElementById("auditLogModal").style.display = "none";
 });
 
 function showToast(message, type) {

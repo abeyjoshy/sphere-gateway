@@ -9,11 +9,16 @@
 html, body { height: 100%; margin: 0; }
 
 /* Overrides widget.css's flex/align-items/padding on body — those were
-   written for the narrow widget iframe; the full-page portal needs its
-   own header to span edge-to-edge instead of shrinking to a centered
-   block. */
+   written for the narrow widget iframe. The portal needs its own
+   app-shell: a fixed-height column (header + main content never taller
+   than the viewport) so only specific panels scroll internally
+   (#recordView below) instead of the whole page scrolling. */
 body {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  height: 100vh;
+  overflow: hidden;
   padding: 0;
   font-family: "Segoe UI", Roboto, Arial, sans-serif;
   color: #1f2937;
@@ -21,6 +26,7 @@ body {
 }
 
 header {
+  flex-shrink: 0;
   background: #0f6cbd;
   color: white;
   padding: 14px 24px;
@@ -46,12 +52,41 @@ header button {
 
 header button:hover { background: rgba(255, 255, 255, 0.28); }
 
+.account-menu { position: relative; }
+
+.account-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: white;
+  border: 1px solid #e0e4e8;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 160px;
+  overflow: hidden;
+  z-index: 500;
+}
+
+.account-dropdown button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  color: #1f2937;
+  border: none;
+  border-radius: 0;
+  padding: 10px 14px;
+}
+
+.account-dropdown button:hover { background: #eef5fc; }
+
 /* widget.css's #loginSection ID rule caps this element's width at 480px
    (for the narrow widget iframe) but sets no margin — without margin:auto
    here it sits flush-left instead of centered on the full-width portal
    page, since body no longer centers its children itself. */
 .auth-screen {
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -84,24 +119,45 @@ header button:hover { background: rgba(255, 255, 255, 0.28); }
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
-  align-items: flex-start;
+  width: 100%;
+  box-sizing: border-box;
+  flex: 1;
+  min-height: 0;
 }
 
-.portal-col-left { flex: 2; min-width: 0; }
+.portal-col-left { flex: 2; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+
+.portal-col-left .card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#recordView { flex: 1; min-height: 0; overflow-y: auto; }
 
 .portal-col-right {
   flex: 1;
   min-width: 260px;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.portal-col-right .card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .card {
   background: white;
   border: 1px solid #e0e4e8;
   border-radius: 8px;
-  padding: 20px;
+  padding: 14px 18px;
 }
 
 .section-title {
@@ -113,8 +169,16 @@ header button:hover { background: rgba(255, 255, 255, 0.28); }
   color: #0b4f8f;
 }
 
-.detail-list { list-style: none; padding: 0; margin: 0; font-size: 13px; line-height: 1.8; }
-.detail-list li { border-bottom: 1px dashed #e0e4e8; padding-bottom: 4px; margin-bottom: 4px; }
+.detail-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.8;
+  column-count: 2;
+  column-gap: 16px;
+}
+.detail-list li { border-bottom: 1px dashed #e0e4e8; padding-bottom: 4px; margin-bottom: 4px; break-inside: avoid; }
 .detail-list li:last-child { border-bottom: none; }
 
 .delete-record-btn {
@@ -236,6 +300,92 @@ button.secondary:hover { background: #eef5fc; }
   padding: 5px 10px;
 }
 
+/* Homepage sidebar summaries — Notifications and Access History now split
+   the full sidebar height evenly between them (each card is flex:1 above),
+   so this just needs to fill whatever's left inside its own card and
+   scroll there; "View All" still opens the full version in a modal. */
+.compact-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin-bottom: 8px;
+}
+
+.compact-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dashed #e0e4e8;
+}
+
+.compact-item:last-child { border-bottom: none; }
+
+.compact-item-highlight {
+  background: #eef5fc;
+  border-left: 3px solid #0f6cbd;
+  padding-left: 8px;
+  font-weight: 600;
+}
+
+.compact-item-minor {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.compact-time {
+  flex-shrink: 0;
+  color: #6b7280;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.view-all-btn {
+  width: 100%;
+  font-size: 12px;
+}
+
+.modal-box-lg {
+  width: 600px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-scroll-list {
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 12px;
+}
+
+.audit-denied { color: #dc2626; }
+
+.audit-emergency {
+  background: #fef2f2;
+  border-radius: 4px;
+}
+
+.audit-meta {
+  display: flex;
+  gap: 10px;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.audit-reason {
+  margin: 4px 0 0 0;
+  font-size: 11px;
+  color: #6b7280;
+  font-style: italic;
+}
+
 @media (max-width: 700px) {
-  .portal-columns { flex-direction: column; }
+  body { height: auto; overflow: visible; }
+  .portal-columns { flex-direction: column; height: auto; overflow: visible; }
+  .portal-col-left, .portal-col-right { min-height: 0; }
+  #recordView { max-height: 60vh; }
 }

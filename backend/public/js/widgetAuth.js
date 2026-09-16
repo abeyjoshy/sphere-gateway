@@ -28,6 +28,7 @@ export function initAuth() {
       document.getElementById("loginSection").style.display = "block";
       document.getElementById("email").value = "";
       document.getElementById("password").value = "";
+      document.getElementById("recordView").innerHTML = "";
     }
   });
 }

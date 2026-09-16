@@ -49,6 +49,7 @@ export default async function generateAuthToken(req, res) {
             {
                 id: user._id,
                 email: user.email,
+                name: user.name,
                 roles: user.roles
             },
             process.env.JWT_SECRET,

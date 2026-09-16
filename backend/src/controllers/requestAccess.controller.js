@@ -1,8 +1,11 @@
 import AccessRequest from "../models/accessRequest.Model.js";
+import { writeAudit } from "../utils/writeAudit.js";
+
 
 export default async function requestAccess(req, res) {
   const { id } = req.params;
   const { reason } = req.body;
+  const sourceSystem = req.get("x-source-system");
 
   await AccessRequest.findOneAndUpdate(
     { patient_id: id, doctor_id: req.user.id, status: "pending" },
@@ -16,6 +19,15 @@ export default async function requestAccess(req, res) {
     },
     { upsert: true }
   );
+
+  await writeAudit({
+    patientId: id,
+    action: "request",
+    actor: req.user,
+    sourceSystem,
+    outcome: "success",
+    reason,
+  });
 
   return res.status(200).json({ status: "OK", message: "Access request sent" });
 }

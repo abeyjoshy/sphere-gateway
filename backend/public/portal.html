@@ -9,7 +9,12 @@
   <header>
     <h1>&#128737; SPHERE Patient Portal</h1>
     <div class="doctor-info" id="portalUserInfo" style="display:none;">
-      <span id="welcomeText"></span>
+      <div class="account-menu">
+        <button id="accountMenuBtn"><span id="welcomeText"></span> &#9662;</button>
+        <div id="accountDropdown" class="account-dropdown" style="display:none;">
+          <button id="viewPersonalDetailsBtn">Personal Details</button>
+        </div>
+      </div>
       <button id="logoutBtn">Logout</button>
     </div>
   </header>
@@ -49,17 +54,25 @@
 
     <aside class="portal-col-right">
       <div class="card">
-        <h4 class="section-title">Personal Details</h4>
-        <div id="personalDetails"></div>
+        <h4 class="section-title">Notifications</h4>
+        <div id="notifications" class="compact-list"></div>
+        <button class="secondary view-all-btn" id="viewAllNotificationsBtn">View All Notifications</button>
       </div>
       <div class="card">
-        <h4 class="section-title">Notifications</h4>
-        <div id="notifications">
-          <p class="empty-note">No new notifications.</p>
-        </div>
+        <h4 class="section-title">Access History</h4>
+        <div id="auditLog" class="compact-list"></div>
+        <button class="secondary view-all-btn" id="viewAllAuditBtn">View All Access History</button>
       </div>
     </aside>
   </main>
+
+  <div id="personalDetailsModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+      <button class="modal-close" id="personalDetailsModalClose">&times;</button>
+      <h3>Personal Details</h3>
+      <div id="personalDetails"></div>
+    </div>
+  </div>
 
   <div id="deleteModal" class="modal-overlay" style="display:none;">
     <div class="modal-box">
@@ -70,6 +83,22 @@
         <button class="secondary" id="deleteCancelBtn">Cancel</button>
         <button id="deleteConfirmBtn">Confirm</button>
       </div>
+    </div>
+  </div>
+
+  <div id="notificationsModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box modal-box-lg">
+      <button class="modal-close" id="notificationsModalClose">&times;</button>
+      <h3>All Notifications</h3>
+      <div id="notificationsModalList" class="modal-scroll-list"></div>
+    </div>
+  </div>
+
+  <div id="auditLogModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box modal-box-lg">
+      <button class="modal-close" id="auditLogModalClose">&times;</button>
+      <h3>Access History</h3>
+      <div id="auditLogModalList" class="modal-scroll-list"></div>
     </div>
   </div>
 

@@ -1,14 +1,26 @@
 import { evaluateAccess } from "../utils/evaluateAccess.js";
 import { operationOutcome } from "../fhir/operationOutcome.js";
+import { writeAudit } from "../utils/writeAudit.js";
 
 const FHIR_JSON = "application/fhir+json";
 
 export default async function requireConsent(req, res, next) {
   const { id: patientId } = req.params;
   const { emergency, reason } = req.query;
+  const sourceSystem = req.get("x-source-system");
 
   const result = await evaluateAccess(patientId, req.user, {
     emergency: emergency === "true",
+    reason,
+  });
+
+  await writeAudit({
+    patientId,
+    action: "access",
+    actor: req.user,
+    sourceSystem,
+    basis: result.basis,
+    outcome: result.allowed ? "success" : "denied",
     reason,
   });
 
