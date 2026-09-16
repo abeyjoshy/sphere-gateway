@@ -22,7 +22,7 @@ async function handleSync(mrn) {
   const token = localStorage.getItem("sphereToken");
 
   try {
-    const res = await fetch(`${INTERCONNECT_BASE_URL}/sync/${mrn}`, {
+    const res = await fetch(`${INTERCONNECT_BASE_URL}/sync/${encodeURIComponent(EMBEDDER_ORIGIN)}/${mrn}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });

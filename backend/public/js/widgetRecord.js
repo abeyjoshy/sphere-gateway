@@ -3,7 +3,10 @@
 // medications nested inside), and Allergies as a separate side column —
 // deliberately not folded into the timeline, since knowing what a patient is
 // allergic to needs to be scannable at a glance, not buried among dates.
+import { getEmbedderOrigin } from "./widgetOrigin.js";
+
 const INTERCONNECT_BASE_URL = "http://localhost:4001/sphere/interconnect";
+const EMBEDDER_ORIGIN = getEmbedderOrigin();
 
 export function initRecordView() {
   const cached = localStorage.getItem("sphereToken");
@@ -20,7 +23,7 @@ async function loadRecord(mrn, { emergency, reason } = {}) {
 
   const query = emergency ? `?emergency=true&reason=${encodeURIComponent(reason)}` : "";
 
-  const res = await fetch(`${INTERCONNECT_BASE_URL}/extract/${mrn}${query}`, {
+  const res = await fetch(`${INTERCONNECT_BASE_URL}/extract/${encodeURIComponent(EMBEDDER_ORIGIN)}/${mrn}${query}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -78,7 +81,7 @@ async function sendAccessRequest(mrn) {
 
   btn.disabled = true;
 
-  const res = await fetch(`${INTERCONNECT_BASE_URL}/request-access/${mrn}`, {
+  const res = await fetch(`${INTERCONNECT_BASE_URL}/request-access/${encodeURIComponent(EMBEDDER_ORIGIN)}/${mrn}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
