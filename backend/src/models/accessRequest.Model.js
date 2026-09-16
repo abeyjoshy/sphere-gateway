@@ -24,7 +24,8 @@ const accessRequestSchema = new mongoose.Schema({
         enum: [
             'pending',
             'approved',
-            'rejected'
+            'rejected',
+            'revoked'
         ],
         default: 'pending'
     },
@@ -37,7 +38,7 @@ const accessRequestSchema = new mongoose.Schema({
     approved_at: {
         type: Date
     },
-    
+
     expires_at: {
         type: Date
     }
