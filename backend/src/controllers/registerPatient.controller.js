@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import User from "../models/user.Model.js";
 import FhirResource from "../models/fhirResource.Model.js";
-import { findPatientByIdentifier } from "../fhir/patientResolver.js";
+import { findPatientByIdentifier, findPatientByDemographics, mergeIdentifiers } from "../fhir/patientResolver.js";
 
 const PPSN_SYSTEM = "http://www.hse.ie/ppsn";
 
@@ -25,15 +25,31 @@ export default async function registerPatient(req, res) {
       return res.status(400).json({ status: "FAILED", message: "An account with this email already exists" });
     }
 
-    // Reuses the exact same matching function sync already uses — a person
-    // registering is really just "matching by identifier" from the other side.
+    const nameParts = name.trim().split(" ");
+    const firstName = nameParts[0];
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : firstName;
+
     let patient = await findPatientByIdentifier([{ system: PPSN_SYSTEM, value: ppsn }]);
 
     if (!patient) {
+      patient = await findPatientByDemographics({
+        name: [{ given: [firstName], family: lastName }],
+        birthDate: dob,
+      });
+    }
+
+    if (patient) {
+      // Found by identifier or demographics — either way, attach the PPSN
+      // just given at registration, so a future sync from any hospital
+      // that also carries this PPSN links straight to this record by
+      // identifier, without needing demographic matching again.
+      const mergedIdentifiers = await mergeIdentifiers(patient.id, [{ system: PPSN_SYSTEM, value: ppsn }]);
+      await FhirResource.findOneAndUpdate(
+        { resourceType: "Patient", fhirId: patient.id },
+        { $set: { "resource.identifier": mergedIdentifiers } }
+      );
+    } else {
       // No hospital has ever synced this person — create their SPHERE record now.
-      const nameParts = name.trim().split(" ");
-      const firstName = nameParts[0];
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : firstName;
       const fhirId = crypto.randomUUID();
 
       const resource = {
