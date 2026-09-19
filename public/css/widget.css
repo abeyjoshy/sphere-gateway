@@ -25,6 +25,22 @@ body {
   max-width: 900px;
 }
 
+#recordToolbar {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+button.secondary {
+  background: white;
+  color: #0f6cbd;
+  border: 1px solid #0f6cbd;
+}
+
+button.secondary:hover { background: #eef5fc; }
+
 /* Only the login screen centers vertically, not the whole page — a long
    record view needs to flow from the top and scroll, not be centered as a
    block (which would clip its top/bottom instead of scrolling naturally). */

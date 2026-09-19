@@ -8,6 +8,11 @@ import { getEmbedderOrigin } from "./widgetOrigin.js";
 const INTERCONNECT_BASE_URL = "http://localhost:4001/sphere/interconnect";
 const EMBEDDER_ORIGIN = getEmbedderOrigin();
 
+// Remembers the mrn currently being viewed so the refresh button can
+// re-fetch without needing the caller to pass it in again — the iframe
+// itself is never reloaded, only this one function re-runs.
+let currentMrn = null;
+
 export function initRecordView() {
   const cached = localStorage.getItem("sphereToken");
   const params = new URLSearchParams(window.location.search);
@@ -16,9 +21,16 @@ export function initRecordView() {
   if (cached && mrn) {
     loadRecord(mrn);
   }
+
+  document.getElementById("refreshRecordBtn").addEventListener("click", () => {
+    if (currentMrn) loadRecord(currentMrn);
+  });
 }
 
 async function loadRecord(mrn, { emergency, reason } = {}) {
+  currentMrn = mrn;
+  document.getElementById("recordToolbar").style.display = "flex";
+
   const token = localStorage.getItem("sphereToken");
 
   const query = emergency ? `?emergency=true&reason=${encodeURIComponent(reason)}` : "";
