@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sphere-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: sphere-static-ip
+    networking.gke.io/managed-certificates: sphere-cert
+spec:
+  rules:
+    - host: sphere.abeyjoshy.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: sphere-gateway
+                port:
+                  number: 3000

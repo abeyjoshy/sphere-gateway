@@ -1,0 +1,7 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: sphere-cert
+spec:
+  domains:
+    - sphere.abeyjoshy.com
