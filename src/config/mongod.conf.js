@@ -23,6 +23,7 @@ const mongooseClient = {
       console.log('MongoDB connected successfully.');
     } catch (error) {
       console.error('MongoDB connection error:', error);
+       process.exit(1);
     }
   }
 };
@@ -34,10 +35,12 @@ mongoose.connection.on('connected', () => {
 
 mongoose.connection.on('error', (err) => {
   console.error(`Mongoose connection error: ${err}`);
+   process.exit(1);
 });
 
 mongoose.connection.on('disconnected', () => {
   console.log('Mongoose disconnected from DB.');
+  process.exit(1);
 });
 
 
